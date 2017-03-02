@@ -38,7 +38,18 @@
  ** @{ */
 
 /*==================[inclusions]=============================================*/
+#include <stdint.h>
+#include <stdio.h>
 
+#include "board.h"
+#include "inttypes.h"
+#include "chip.h"
+
+#include "board.h"
+#include "stdint.h"
+
+#include "../../hw/inc/hw_handler.h"
+#include "../../sw/inc/states_machine.h"
 /*==================[cplusplus]==============================================*/
 
 #ifdef __cplusplus

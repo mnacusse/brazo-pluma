@@ -1,4 +1,14 @@
 #include "../inc/hw_handler.h"
+#define MD_PUP						(0x0 << 3)		/** Enable pull-up resistor at pad */
+#define MD_BUK						(0x1 << 3)		/** Enable pull-down and pull-up resistor at resistor at pad (repeater mode) */
+#define MD_PLN						(0x2 << 3)		/** Disable pull-down and pull-up resistor at resistor at pad */
+#define MD_PDN						(0x3 << 3)		/** Enable pull-down resistor at pad */
+#define MD_EHS						(0x1 << 5)		/** Enable fast slew rate */
+#define MD_EZI						(0x1 << 6)		/** Input buffer enable */
+#define MD_ZI						(0x1 << 7)		/** Disable input glitch filter */
+#define MD_EHD0						(0x1 << 8)		/** EHD driver strength low bit */
+#define MD_EHD1						(0x1 << 8)		/** EHD driver strength high bit */
+#define MD_PLN_FAST					(MD_PLN | MD_EZI | MD_ZI | MD_EHS)
 
 void incializarPuertos(void)
 {
@@ -9,6 +19,8 @@ void incializarPuertos(void)
 	Chip_SCU_PinMux(MDOWN_OUT_PIN,MDOWN_OUT_PORT,MD_PUP|MD_EZI|MD_ZI,MDOWN_OUT_FUNC); /* */
 	Chip_SCU_PinMux(MANIP_IN_PIN,MANIP_IN_PORT,MD_PUP|MD_EZI|MD_ZI,MANIP_IN_FUNC); /* */
 	Chip_SCU_PinMux(MANIP_OUT_PIN,MANIP_OUT_PORT,MD_PUP|MD_EZI|MD_ZI,MANIP_OUT_FUNC); /* */
+	Chip_SCU_PinMux(MSTOP_OUT_PIN,MSTOP_OUT_PORT,MD_PUP|MD_EZI|MD_ZI,MSTOP_OUT_FUNC); /* */
+
 	//Ports configuration
 	Chip_GPIO_SetDir(LPC_GPIO_PORT, MUP_IN_GPION,(1<<MUP_IN_GPIOP),0);
 	Chip_GPIO_SetDir(LPC_GPIO_PORT, MUP_OUT_GPION,(1<<MUP_OUT_GPIOP),1);
@@ -16,6 +28,7 @@ void incializarPuertos(void)
 	Chip_GPIO_SetDir(LPC_GPIO_PORT, MDOWN_OUT_GPION,(1<<MDOWN_OUT_GPIOP),1);
 	Chip_GPIO_SetDir(LPC_GPIO_PORT, MANIP_IN_GPION,(1<<MANIP_IN_GPIOP),0);
 	Chip_GPIO_SetDir(LPC_GPIO_PORT, MANIP_OUT_GPION,(1<<MANIP_OUT_GPIOP),1);
+	Chip_GPIO_SetDir(LPC_GPIO_PORT, MSTOP_IN_GPION,(1<<MSTOP_IN_GPIOP),0);
 	// Port sets to zero
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 0);
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 0);
@@ -24,7 +37,7 @@ void incializarPuertos(void)
 }
 
 
-uint_t loadCable(){
+uint8_t loadCable(){
 
 	uint8_t res = 0x0;
 	char str[64];
@@ -57,7 +70,7 @@ uint8_t stopMotor()
 
 uint8_t enableAir()
 {
-	uint8_t res = 0x0;
+	uint8_t ret = 0x0;
 	char str[64];
 	sprintf(str,"Aire habilitado .... \r\n ");
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_OUT_GPION,MANIP_OUT_GPIOP, 1);
@@ -67,7 +80,7 @@ uint8_t enableAir()
 
 uint8_t disableAir()
 {
-	uint8_t res = 0x0;
+	uint8_t ret = 0x0;
 	char str[64];
 	sprintf(str,"Aire desabilitado .... \r\n ");
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_OUT_GPION,MANIP_OUT_GPIOP, 0);
@@ -76,11 +89,20 @@ uint8_t disableAir()
 }
 
 
-uint32_t Button_GetStatus(void)
+uint8_t Button_GetStatus(void)
 {
 	uint8_t ret = NO_BUTTON_PRESSED;
-	if (Chip_GPIO_GetPinState(LPC_GPIO_PORT, MUP_IN_GPION , MUP_IN_GPIOP) == 0) {
-		ret |= BUTTONS_BUTTON1;
+	if (Chip_GPIO_GetPinState(LPC_GPIO_PORT, MUP_IN_GPION , (1<<MUP_IN_GPIOP)) == 0) {
+		ret |= BUTTONS_UP;
+	}
+	if (Chip_GPIO_GetPinState(LPC_GPIO_PORT, MDOWN_IN_GPION , (1<<MDOWN_IN_GPIOP)) == 0) {
+		ret |= BUTTONS_DOWN;
+	}
+	if (Chip_GPIO_GetPinState(LPC_GPIO_PORT, MSTOP_IN_GPION , (1<<MSTOP_IN_GPIOP)) == 0) {
+		ret |= BUTTONS_STOP;
+	}
+	if (Chip_GPIO_GetPinState(LPC_GPIO_PORT, MANIP_IN_GPION , (1<<MANIP_IN_GPIOP)) == 0) {
+		ret |= BUTTONS_DIS_AIR;
 	}
 	return ret;
 }

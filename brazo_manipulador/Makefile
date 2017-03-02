@@ -33,17 +33,22 @@
 PROJECT_NAME := $(notdir $(PROJECT))
 
 # Modules needed by the application
-PROJECT_MODULES := modules/$(TARGET)/base \
-                   modules/$(TARGET)/board \
-                   modules/$(TARGET)/chip
+PROJECT_MODULES := modules/$(TARGET)/base 
+PROJECT_MODULES += modules/$(TARGET)/board
+PROJECT_MODULES += modules/$(TARGET)/chip 
+
 
 # source files folder
-PROJECT_SRC_FOLDERS := $(PROJECT)/src
+PROJECT_SRC_FOLDERS := $(PROJECT)/src $(PROJECT)/hw/src $(PROJECT)/sw/src# poner aca los src del hw y sw
 
 # header files folder
 PROJECT_INC_FOLDERS := $(PROJECT)/inc \
-
+			$(PROJECT)/hw/inc \
+			$(PROJECT)/sw/inc 
 
 # source files
-PROJECT_C_FILES := $(wildcard $(PROJECT)/src/*.c)
+PROJECT_C_FILES := $(wildcard $(PROJECT)/src/*.c) 
+PROJECT_C_FILES += $(wildcard $(PROJECT)/hw/src/*.c) 
+PROJECT_C_FILES += $(wildcard $(PROJECT)/sw/src/*.c)
+
 PROJECT_ASM_FILES := $(wildcard $(PROJECT)/src/*.S)

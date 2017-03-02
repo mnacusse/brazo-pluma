@@ -39,14 +39,14 @@
 
 /*==================[inclusions]=============================================*/
 
+
+
+//#include "ciaaPOSIX_stdio.h"  /* <= device handler header */
+//#include "ciaaPOSIX_string.h" /* <= string header */
+
+
 #include "../sw/inc/main.h"
-#include "board.h"
-#include "stdint.h"
-#include "inttypes.h"
-#include "ciaaPOSIX_stdio.h"  /* <= device handler header */
-#include "ciaaPOSIX_string.h" /* <= string header */
-#include "../../hw/inc/hw_handler.h"
-#include "../../sw/inc/states_machine.h"
+
 /*==================[macros and definitions]=================================*/
 
 /*==================[internal data declaration]==============================*/
@@ -80,7 +80,7 @@ static void initHardware(void)
 	/* Usa la base de tiempo del procesador (con el contador de 24 bits),
 	 * es decir, cuenta 200M / 1000 en este caso, y ahi te queda 1ms
 	 * */
-	incializarPuertos(void);
+	incializarPuertos();
 }
 
 static void pausems(uint32_t t)
@@ -100,19 +100,21 @@ void SysTick_Handler(void)
 
 int main(void)
 {
-	BrazoState maquina = {.en_state = WAITING, .m_state = MANIPULATOR_FREE, .distance = 0, .msg=''};
-	char str[20];
-	int32_t led,cont = 0;
+	BrazoState maquina = {.en_state = WAITING, .m_state = MANIPULATOR_FREE, .distance = 0, .msg=""};
+
+	//int32_t led,cont = 0;
 	uint8_t butStat = 0x00;
 	initHardware();
 	pausems(100);
-	led = LED;
-	str = "Sistema inicializado ... ";
+	//led = LED;
+	uint8_t strinit[] = "Sistema inicializado ... ";
+	DEBUGSTR(strinit);
+	//uint8_t str[64];
 	showState(&maquina);
 	while (1)
 	{
-		engine_states engState_prev = maquina->en_state;
-		manip_states manipState_prev = maquina->m_state;
+		engine_states engState_prev = maquina.en_state;
+		manip_states manipState_prev = maquina.m_state;
 		butStat = Button_GetStatus();
 		switch(butStat)
 		{
@@ -132,7 +134,7 @@ int main(void)
 				cambiarManipState(&maquina,MANIPULATOR_FREE);
 				break;
 		}
-		if (engState_prev |= maquina->en_state || manipState_prev |= maquina->m_state )
+		if ((engState_prev |= maquina.en_state) || (manipState_prev |= maquina.m_state) )
 			showState(&maquina);
 		/*sprintf(str,"asda: %"PRIu32"-->\r\n ",butStat);
 		DEBUGSTR(str);
