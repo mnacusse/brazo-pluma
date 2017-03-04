@@ -10,11 +10,12 @@ typedef struct {
   engine_states en_state;
   manip_states m_state;
   uint16_t distance;
-  char msg[64];
+  uint8_t msg[64];
 } BrazoState;
 
-void cambiarEngState(BrazoState *state,engine_states *es);
-void cambiarManipState(BrazoState *state,manip_states *ms);
+void cambiarEngState(BrazoState *state,engine_states es);
+void cambiarManipState(BrazoState *state,manip_states ms);
 void showState(BrazoState *state);
-void getMsg(char *msg);
+//void getMsg(char *msg);
 
+void getMsg(char *msg, BrazoState * state);
