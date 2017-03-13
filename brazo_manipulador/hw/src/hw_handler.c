@@ -29,10 +29,17 @@ void incializarPuertos(void)
 	Chip_GPIO_SetDir(LPC_GPIO_PORT, MANIP_IN_GPION,(1<<MANIP_IN_GPIOP),0);
 	Chip_GPIO_SetDir(LPC_GPIO_PORT, MANIP_OUT_GPION,(1<<MANIP_OUT_GPIOP),1);
 	Chip_GPIO_SetDir(LPC_GPIO_PORT, MSTOP_IN_GPION,(1<<MSTOP_IN_GPIOP),0);
-	// Port sets to zero
+	// output Port sets to zero
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 0);
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 0);
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_OUT_GPION,MANIP_OUT_GPIOP, 0);
+	// input ports set to zero
+	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_IN_GPION,MUP_IN_GPIOP, 1);
+	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_IN_GPION,MDOWN_IN_GPIOP, 1);
+	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MSTOP_IN_GPION,MSTOP_IN_GPIOP, 1);
+	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_IN_GPION,MANIP_IN_GPIOP, 1);
+	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_OUT_GPION,MANIP_OUT_GPIOP, 1);
+
 
 }
 
@@ -41,7 +48,8 @@ uint8_t loadCable(){
 
 	uint8_t res = 0x0;
 	char str[64];
-	sprintf(str,"Subiendo el cable ... \r\n ");
+	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 0);
+	//sprintf(str,"Subiendo el cable ... \r\n ");
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 1);
 	DEBUGSTR(str);
 	return res;
@@ -51,6 +59,7 @@ uint8_t releaseCable()
 {
 	uint8_t res = 0x0;
 	char str[64];
+	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 0);
 	sprintf(str,"Bajando el cable ... \r\n ");
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 1);
 	DEBUGSTR(str);
@@ -61,7 +70,7 @@ uint8_t stopMotor()
 {
 	uint8_t res = 0x0;
 	char str[64];
-	sprintf(str,"Motor detenido\r\n ");
+	//sprintf(str,"Motor detenido\r\n ");
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 0);
 	Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 0);
 	DEBUGSTR(str);
@@ -91,6 +100,9 @@ uint8_t disableAir()
 
 uint8_t Button_GetStatus(void)
 {
+	//char str[64];
+
+
 	uint8_t ret = NO_BUTTON_PRESSED;
 	if (Chip_GPIO_GetPinState(LPC_GPIO_PORT, MUP_IN_GPION , (1<<MUP_IN_GPIOP)) == 0) {
 		ret |= BUTTONS_UP;
@@ -104,5 +116,7 @@ uint8_t Button_GetStatus(void)
 	if (Chip_GPIO_GetPinState(LPC_GPIO_PORT, MANIP_IN_GPION , (1<<MANIP_IN_GPIOP)) == 0) {
 		ret |= BUTTONS_DIS_AIR;
 	}
+	//sprintf(str,"termino de ver los botones .... \r\n ");
+	//DEBUGSTR(str);
 	return ret;
 }

@@ -1,14 +1,18 @@
 #include "../inc/states_machine.h"
 
-void cambiarEngState(BrazoState *state,engine_states es)
+void cambiarManipState(BrazoState *state,manip_states ms)
 {
-	if (state->en_state == es || state->en_state == WAITING || es == WAITING)
+	//if (state->m_state == MANIPULATOR_FREE || ms == MANIPULATOR_HOLDING || (state->en_state == WAITING && ms == MANIPULATOR_FREE))
 	{
-		state->en_state = es;
-		switch(es)
+
+		switch(ms)
 		{
 			case MANIPULATOR_FREE:
-				disableAir();
+				if(state->en_state == WAITING)
+				{
+					state->m_state = ms;
+					disableAir();
+				}
 	//			state->msg = "Manipulador liberado ... \r\n";
 				break;
 			case MANIPULATOR_HOLDING:
@@ -23,14 +27,17 @@ void cambiarEngState(BrazoState *state,engine_states es)
 }
 
 
-void cambiarManipState(BrazoState *state,manip_states ms)
+void cambiarEngState(BrazoState *state,engine_states es)
 {
-	if (state->m_state == ms || state->en_state == WAITING)
-	{
-		state->m_state = ms;
-		switch(ms)
+	//if (state->en_state == es || state->en_state == WAITING)
+//	{
+	uint8_t str[64];
+		state->en_state = es;
+		switch(es)
 		{
 		case ENGINE_UP:
+			sprintf(str," sube o no sube?? \r\n");
+			DEBUGSTR(str);
 			loadCable();
 			//state->msg = "cargando el cable ... \r\n";
 			break;
@@ -38,17 +45,19 @@ void cambiarManipState(BrazoState *state,manip_states ms)
 			releaseCable();
 			//state->msg = "bajando el cable ... \r\n";
 			break;
+		case WAITING:
+			stopMotor();
 		default:
 			stopMotor();
 			//state->msg = "motor detenido... \r\n";
 		}
-	}
+	//}
 }
 
 void showState(BrazoState *state)
 {
 	uint8_t str[64];
-	sprintf(str,"Estado del sistema:\r\n Motor:");
+	sprintf(str,"Estado del sistema:\r\n");
 	DEBUGSTR(str);
 	switch (state->en_state)
 	{

@@ -45,11 +45,23 @@
 //#include "ciaaPOSIX_string.h" /* <= string header */
 
 
-#include "../sw/inc/main.h"
+#include "main.h"
 
 /*==================[macros and definitions]=================================*/
+#define LPC_UART 	LPC_USART2
+#define UARTx_IRQn  USART2_IRQn
+
+/* Ring buffer size */
+#define UART_RB_SIZE 256
 
 /*==================[internal data declaration]==============================*/
+
+/* Transmit and receive ring buffers */
+static RINGBUFF_T txring, rxring;
+
+/* Transmit and receive buffers */
+static uint8_t rxbuff[UART_RB_SIZE], txbuff[UART_RB_SIZE];
+const uint8_t MSG_INIT[] = "Manipulador de placas\r\n";
 
 /*==================[internal functions declaration]=========================*/
 
@@ -70,17 +82,30 @@ static uint32_t pausems_count;
 
 /*==================[external data definition]===============================*/
 
+/*==================[external functions definition]==========================*/
+/**
+ * @brief	UART interrupt handler sub-routine
+ * @return	Nothing
+ */
+void UART2_IRQHandler(void)
+{
+	Chip_UART_IRQRBHandler(LPC_UART, &rxring, &txring);
+}
+
+
 /*==================[internal functions definition]==========================*/
 
 static void initHardware(void)
 {
-	Board_Init();
+
 	SystemCoreClockUpdate();
-	SysTick_Config(SystemCoreClock / 500); // cada cuantos tics de reloj tiene que generar la interrupcion. EN este caso cada un ms
+	SysTick_Config(SystemCoreClock / 1000); // cada cuantos tics de reloj tiene que generar la interrupcion. EN este caso cada un ms
 	/* Usa la base de tiempo del procesador (con el contador de 24 bits),
 	 * es decir, cuenta 200M / 1000 en este caso, y ahi te queda 1ms
 	 * */
+	Board_Init();
 	incializarPuertos();
+    Board_UART_Init(LPC_UART);
 }
 
 static void pausems(uint32_t t)
@@ -100,41 +125,139 @@ void SysTick_Handler(void)
 
 int main(void)
 {
-	BrazoState maquina = {.en_state = WAITING, .m_state = MANIPULATOR_FREE, .distance = 0, .msg=""};
-
-	//int32_t led,cont = 0;
-	uint8_t butStat = 0x00;
 	initHardware();
 	pausems(100);
+	uint8_t salidaUART;
+
+	Chip_UART_SetBaud(LPC_UART, 115200);
+	Chip_UART_ConfigData(LPC_UART, UART_LCR_WLEN8 | UART_LCR_SBS_1BIT); /* Default 8-N-1 */
+		/* Enable UART Transmit */
+	Chip_UART_TXEnable(LPC_UART);
+
+		/* Reset FIFOs, Enable FIFOs and DMA mode in UART */
+	Chip_UART_SetupFIFOS(LPC_UART, (UART_FCR_FIFO_EN | UART_FCR_RX_RS |
+								UART_FCR_TX_RS | UART_FCR_TRG_LEV0));
+
+		/* Enable UART Rx & line status interrupts */
+		/*
+		 * Do not enable transmit interrupt here, since it is handled by
+		 * UART_Send() function, just to reset Tx Interrupt state for the
+		 * first time
+		 */
+	Chip_UART_IntEnable(LPC_UART, (UART_IER_RBRINT));
+
+		/* Before using the ring buffers, initialize them using the ring
+		   buffer init function */
+	RingBuffer_Init(&rxring, rxbuff, 1, UART_RB_SIZE);
+	RingBuffer_Init(&txring, txbuff, 1, UART_RB_SIZE);
+
+		/* Enable Interrupt for UART channel */
+		/* Priority = 1 */
+	NVIC_SetPriority(UARTx_IRQn, 1);
+		/* Enable Interrupt for UART channel */
+	NVIC_EnableIRQ(UARTx_IRQn);
+	//Chip_UART_SendRB(LPC_UART,&txring,&MSG_INIT,sizeof(MSG_INIT));
+
+	//int32_t led,cont = 0;
+
 	//led = LED;
 	uint8_t strinit[] = "Sistema inicializado ... ";
 	DEBUGSTR(strinit);
 	//uint8_t str[64];
+
+	BrazoState maquina = {.en_state = WAITING, .m_state = MANIPULATOR_HOLDING, .distance = 0, .msg=""};
+	//cambiarEngState(&maquina,WAITING);
+	//cambiarManipState(&maquina,MANIPULATOR_HOLDING);
 	showState(&maquina);
+	int len;
+	uint32_t cont = 0;
+	uint8_t buffer[1];
+	uint8_t butStat;// = 0x00;
+	uint8_t strinit2[] = " --> ahora vemos q pasa x aqui.... \r \n \r\n";
+
+	engine_states engState_prev;// = maquina.en_state;
+	manip_states manipState_prev;// = maquina.m_state;
 	while (1)
 	{
-		engine_states engState_prev = maquina.en_state;
-		manip_states manipState_prev = maquina.m_state;
+		buffer[0] = ' ';
+		butStat = 0x00;
+		engState_prev = maquina.en_state;
+		manipState_prev = maquina.m_state;
+
 		butStat = Button_GetStatus();
+		len = Chip_UART_ReadRB(LPC_UART, &rxring, &buffer, sizeof(buffer));
+		Chip_UART_SendRB(LPC_UART, &txring, &buffer, len);
+
+		//sprintf(strinit2,"vuelta nro: %"PRIu32"-->\r\n ",cont);
+		//DEBUGSTR(strinit2);
+		if(buffer[0] == 'c')
+		{
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_OUT_GPION,MANIP_OUT_GPIOP, 1);
+			butStat = 0xFF;//BUTTONS_EN_AIR;
+			sprintf(strinit2," Entrada --> %"PRIu32"--> enable air\r\n ",butStat);
+			DEBUGSTR(strinit2);
+		}
+		else if(buffer[0] == 'l')
+		{
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_OUT_GPION,MANIP_OUT_GPIOP, 0);
+			butStat = 0xFF;//BUTTONS_DIS_AIR;
+			sprintf(strinit2," Entrada --> %"PRIu32"--> dis air\r\n ",butStat);
+			DEBUGSTR(strinit2);
+		}
+		else if(buffer[0] == 's')
+		{
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 0);
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 1);
+
+
+			butStat = 0xFF;//BUTTONS_UP;
+			sprintf(strinit2," Entrada -->  %"PRIu32"--> subir \r\n ",butStat);
+			DEBUGSTR(strinit2);
+		}
+		else if(buffer[0] == 'b')
+		{
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 0);
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 1);
+			butStat = 0xFF;//BUTTONS_DOWN;
+			sprintf(strinit2," Entrada-->  %"PRIu32"-->bajar \r\n ",butStat);
+			DEBUGSTR(strinit2);
+		}
+		else if(buffer[0] == 'p')
+		{
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 0);
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 0);
+			butStat = 0xFF;//BUTTONS_STOP;
+			sprintf(strinit2," Entrada --> %"PRIu32"--> parar motor \r\n ",butStat);
+			DEBUGSTR(strinit2);
+		}
+		else if(buffer[0] == 'q')
+			showState(&maquina);
 		switch(butStat)
 		{
-			case BUTTONS_STOP:
+			case BUTTONS_STOP: // 1
 				cambiarEngState(&maquina,WAITING);
+				//showState(&maquina);
 				break;
-			case BUTTONS_UP:
-				cambiarEngState(&maquina,ENGINE_UP);
+			case BUTTONS_UP: // 2
+				cambiarEngState(&maquina,ENGINE_UP); // 1
+				//showState(&maquina);
 				break;
-			case BUTTONS_DOWN:
-				cambiarEngState(&maquina,ENGINE_DOWN);
+			case BUTTONS_DOWN: // 4
+				cambiarEngState(&maquina,ENGINE_DOWN); // 2
+			//	showState(&maquina);
 				break;
-			case BUTTONS_EN_AIR:
+			case BUTTONS_EN_AIR: // 8
 				cambiarManipState(&maquina,MANIPULATOR_HOLDING);
-				break;
-			case BUTTONS_DIS_AIR:
+				showState(&maquina);
+		//		break;
+			case BUTTONS_DIS_AIR: // 16
 				cambiarManipState(&maquina,MANIPULATOR_FREE);
+				showState(&maquina);
+				break;
+			default:
 				break;
 		}
-		if ((engState_prev |= maquina.en_state) || (manipState_prev |= maquina.m_state) )
+		if ((engState_prev != maquina.en_state) || (manipState_prev != maquina.m_state) )
 			showState(&maquina);
 		/*sprintf(str,"asda: %"PRIu32"-->\r\n ",butStat);
 		DEBUGSTR(str);
@@ -143,7 +266,10 @@ int main(void)
 		DEBUGSTR(str);
 
 		Board_LED_Toggle(LED);*/
-		pausems(DELAY_MS);
+		//sprintf(strinit2,"vuelta nro: %"PRIu32"-->\r\n ",cont);
+		//DEBUGSTR(strinit2);
+		//pausems(1);
+		//pausems(DELAY_MS);
 	}
 }
 
