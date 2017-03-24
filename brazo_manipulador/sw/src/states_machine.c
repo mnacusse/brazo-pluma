@@ -2,56 +2,43 @@
 
 void cambiarManipState(BrazoState *state,manip_states ms)
 {
-	//if (state->m_state == MANIPULATOR_FREE || ms == MANIPULATOR_HOLDING || (state->en_state == WAITING && ms == MANIPULATOR_FREE))
+	switch(ms)
 	{
-
-		switch(ms)
-		{
-			case MANIPULATOR_FREE:
-				if(state->en_state == WAITING)
-				{
-					state->m_state = ms;
-					disableAir();
-				}
-	//			state->msg = "Manipulador liberado ... \r\n";
-				break;
-			case MANIPULATOR_HOLDING:
-				enableAir();
-		//		state->msg = "aire habilitado ... \r\n";
-				break;
-			default:
-				enableAir();
-			//	state->msg = "aire habilitado por defecto... \r\n";
-		}
+		case MANIPULATOR_FREE:
+			if(state->en_state == WAITING)
+			{
+				disableAir();
+				state->m_state = ms;
+			}
+			break;
+		case MANIPULATOR_HOLDING:
+			enableAir();
+			state->m_state = ms;
+			break;
+		default:
+			enableAir();
 	}
 }
 
 
 void cambiarEngState(BrazoState *state,engine_states es)
 {
-	//if (state->en_state == es || state->en_state == WAITING)
-//	{
 	uint8_t str[64];
 		state->en_state = es;
 		switch(es)
 		{
 		case ENGINE_UP:
-			sprintf(str," sube o no sube?? \r\n");
-			DEBUGSTR(str);
 			loadCable();
-			//state->msg = "cargando el cable ... \r\n";
 			break;
 		case ENGINE_DOWN:
 			releaseCable();
-			//state->msg = "bajando el cable ... \r\n";
 			break;
 		case WAITING:
 			stopMotor();
+			break;
 		default:
 			stopMotor();
-			//state->msg = "motor detenido... \r\n";
 		}
-	//}
 }
 
 void showState(BrazoState *state)

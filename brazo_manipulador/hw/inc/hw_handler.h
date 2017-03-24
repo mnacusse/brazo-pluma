@@ -47,12 +47,15 @@
 #define MSTOP_IN_GPION 	0x02
 #define MSTOP_IN_GPIOP 	0x03
 
-#define NO_BUTTON_PRESSED 0x00
-#define BUTTONS_STOP	0X01
-#define BUTTONS_UP		0X02
-#define BUTTONS_DOWN	0X04
-#define BUTTONS_EN_AIR	0X08
-#define BUTTONS_DIS_AIR 0x16
+#define NO_BUTTON_PRESSED 0x05
+#define BUTTONS_STOP	0X00
+#define BUTTONS_UP		0X01
+#define BUTTONS_DOWN	0X02
+#define BUTTONS_EN_AIR	0X04
+#define BUTTONS_DIS_AIR 0x03
+
+typedef enum  inupt_states {PARAR, SUBIR, BAJAR, LIBERAR, CARGAR} inupt_states;
+
 
 
 void incializarPuertos(void);

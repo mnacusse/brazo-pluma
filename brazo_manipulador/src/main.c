@@ -172,7 +172,7 @@ int main(void)
 	int len;
 	uint32_t cont = 0;
 	uint8_t buffer[1];
-	uint8_t butStat;// = 0x00;
+	uint8_t butStat, kbe = 0;;// = 0x00;
 	uint8_t strinit2[] = " --> ahora vemos q pasa x aqui.... \r \n \r\n";
 
 	engine_states engState_prev;// = maquina.en_state;
@@ -188,88 +188,58 @@ int main(void)
 		len = Chip_UART_ReadRB(LPC_UART, &rxring, &buffer, sizeof(buffer));
 		Chip_UART_SendRB(LPC_UART, &txring, &buffer, len);
 
-		//sprintf(strinit2,"vuelta nro: %"PRIu32"-->\r\n ",cont);
-		//DEBUGSTR(strinit2);
 		if(buffer[0] == 'c')
 		{
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_OUT_GPION,MANIP_OUT_GPIOP, 1);
-			butStat = 0xFF;//BUTTONS_EN_AIR;
-			sprintf(strinit2," Entrada --> %"PRIu32"--> enable air\r\n ",butStat);
-			DEBUGSTR(strinit2);
+			butStat = CARGAR;//BUTTONS_EN_AIR;
 		}
 		else if(buffer[0] == 'l')
 		{
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MANIP_OUT_GPION,MANIP_OUT_GPIOP, 0);
-			butStat = 0xFF;//BUTTONS_DIS_AIR;
-			sprintf(strinit2," Entrada --> %"PRIu32"--> dis air\r\n ",butStat);
-			DEBUGSTR(strinit2);
+			butStat = LIBERAR;//BUTTONS_DIS_AIR;
 		}
 		else if(buffer[0] == 's')
 		{
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 0);
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 1);
-
-
-			butStat = 0xFF;//BUTTONS_UP;
-			sprintf(strinit2," Entrada -->  %"PRIu32"--> subir \r\n ",butStat);
-			DEBUGSTR(strinit2);
+			butStat = SUBIR;//BUTTONS_UP;
 		}
 		else if(buffer[0] == 'b')
 		{
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 0);
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 1);
-			butStat = 0xFF;//BUTTONS_DOWN;
-			sprintf(strinit2," Entrada-->  %"PRIu32"-->bajar \r\n ",butStat);
-			DEBUGSTR(strinit2);
+			butStat = BAJAR;//BUTTONS_DOWN;
 		}
 		else if(buffer[0] == 'p')
 		{
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MUP_OUT_GPION,MUP_OUT_GPIOP, 0);
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, MDOWN_OUT_GPION,MDOWN_OUT_GPIOP, 0);
-			butStat = 0xFF;//BUTTONS_STOP;
-			sprintf(strinit2," Entrada --> %"PRIu32"--> parar motor \r\n ",butStat);
-			DEBUGSTR(strinit2);
+			butStat = PARAR;//BUTTONS_STOP;
 		}
 		else if(buffer[0] == 'q')
 			showState(&maquina);
 		switch(butStat)
 		{
-			case BUTTONS_STOP: // 1
+			case PARAR:
 				cambiarEngState(&maquina,WAITING);
-				//showState(&maquina);
 				break;
-			case BUTTONS_UP: // 2
+			case SUBIR: // 2
 				cambiarEngState(&maquina,ENGINE_UP); // 1
-				//showState(&maquina);
 				break;
-			case BUTTONS_DOWN: // 4
+			case BAJAR: // 4
 				cambiarEngState(&maquina,ENGINE_DOWN); // 2
-			//	showState(&maquina);
 				break;
-			case BUTTONS_EN_AIR: // 8
+			case CARGAR: // 8
 				cambiarManipState(&maquina,MANIPULATOR_HOLDING);
-				showState(&maquina);
-		//		break;
-			case BUTTONS_DIS_AIR: // 16
+				break;
+			case LIBERAR: // 16
 				cambiarManipState(&maquina,MANIPULATOR_FREE);
-				showState(&maquina);
+				/*if (kbe>0)
+				{
+					// si se suelta por el teclado, se corta el aire por 1500ms  y despues se restituye
+					kbe = 0;
+					pausems(1500);
+					cambiarManipState(&maquina,MANIPULATOR_HOLDING);
+				}*/
 				break;
 			default:
 				break;
 		}
 		if ((engState_prev != maquina.en_state) || (manipState_prev != maquina.m_state) )
 			showState(&maquina);
-		/*sprintf(str,"asda: %"PRIu32"-->\r\n ",butStat);
-		DEBUGSTR(str);
-		sprintf(str,"Evento nro: %"PRIu32"\r\n",cont);
-		cont++;
-		DEBUGSTR(str);
 
-		Board_LED_Toggle(LED);*/
-		//sprintf(strinit2,"vuelta nro: %"PRIu32"-->\r\n ",cont);
-		//DEBUGSTR(strinit2);
-		//pausems(1);
-		//pausems(DELAY_MS);
 	}
 }
 

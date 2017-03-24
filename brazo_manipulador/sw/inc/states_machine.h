@@ -5,7 +5,6 @@
 #include "../../hw/inc/hw_handler.h"
 typedef enum engine_states {WAITING, ENGINE_UP,ENGINE_DOWN, ENGINE_ERROR} engine_states;
 typedef enum manip_states {MANIPULATOR_FREE, MANIPULATOR_HOLDING, MANIP_ERROR} manip_states;
-
 typedef struct {
   engine_states en_state;
   manip_states m_state;
